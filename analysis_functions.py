@@ -865,7 +865,7 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
         #noise = (np.mean(inspectrum[n1[0]:n1[1]]) + np.mean(inspectrum[n2[0]:n2[1]])) / 2
         noisestd = (np.std(inspectrum[n1[0]:n1[1]]) + np.std(inspectrum[n2[0]:n2[1]])) / 2
         #inspectrum = (inspectrum) - (noise)
-        inspectrum = inspectrum - sfit_func(inwave)
+        inspectrum = inspectrum #- sfit_func(inwave)
         inspectrum[(1/(inwave * 10**-8) < 3650) | (1/(inwave * 10**-8) > 3850)] = 0
 
         invel = phdata[i]['NII6583_VEL']+ingalvel
@@ -873,14 +873,17 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
         
         try:
             fit = fit_lines_in_spectrum(inspectrum, [red3729], 
-                      step=incube.params.step, order=incube.params.order, nm_laser=incube.params.nm_laser,
-                      theta=corr2theta(incube.params.axis_corr), zpd_index=incube.params.zpd_index, 
+                      step=incube.params.step, 
+                      order=incube.params.order, 
+                      nm_laser=incube.params.nm_laser,
+                      theta=corr2theta(incube.params.axis_corr), 
+                      zpd_index=incube.params.zpd_index, 
                       wavenumber=True,
                       apodization=1, 
                       fmodel=fitshape,
-                      pos_def='1', pos_cov=3,
-                      amp_def='1', amp_guess=3,
-                      sigma_def='1', sigma_cov=5)
+                      pos_def='1', pos_cov=10,
+                      amp_def='1', amp_guess=10,
+                      sigma_def='1', sigma_cov=10)
             
             snr = fit['lines_params'][0][1] / noisestd
 

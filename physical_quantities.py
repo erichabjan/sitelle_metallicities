@@ -86,3 +86,4 @@ print(f'{metlen} Metallicity measurements')
 
 metdata.write(inter_data_path + f'/{galaxy}_physdata_MUSE+SITELLE.fits', overwrite=True)
 
+print('Physical quantities code ran successfully')

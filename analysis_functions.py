@@ -796,7 +796,7 @@ def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, broad_in, redwave
         s_fit = np.polyfit(fit_lam, fit_spec, 1)
         sfit_func = np.poly1d(s_fit)
 
-        spec = spec - sfit_func(inwave)
+        spec = spec #- sfit_func(inwave)
         spec[(1/(inwave * 10**-8) < 3650) | (1/(inwave * 10**-8) > 3850)] = 0
         
         try:

@@ -303,4 +303,4 @@ spec_hdu.writeto(inter_data_path + f'/{galaxy}_SITELLE_Spectra.fits', overwrite=
 cube_fits.writeto(inter_data_path + f"/{galaxy}_SITELLE.fits", overwrite=True, output_verify='fix')
 cube_fits_mp.writeto(inter_data_path + f"/{galaxy}_SITELLE_mp.fits", overwrite=True)
 
-print('montage_reproject.py successfully ran')
+print('Reprojection code ran successfully')

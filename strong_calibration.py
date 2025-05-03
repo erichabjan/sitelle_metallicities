@@ -204,3 +204,5 @@ t96_data = vstack(results)
 prod_data_path = '/home/habjan/SITELLE/data/data_products'
 
 t96_data.write(prod_data_path + f'/strong_line_MUSE+SITELLE.fits', overwrite=True)
+
+print('Srong Line calibration code ran successfully')

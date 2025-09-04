@@ -75,11 +75,6 @@ parser.add_argument("input_string", type=str, help="The input string to process"
 args = parser.parse_args()
 galaxy = args.input_string
 
-#galaxynum = 4
-#galdic = {1:'NGC4254', 2:'NGC4535', 3:'NGC3351', 4:'NGC2835', 5:'NGC0628', 6:'NGC3627'}  #There is no SITELLE data for NGC 4254, NGC 2835 has the best data 
-#galaxy = galdic[galaxynum]
-#galaxy
-
 galveldic = {'NGC4254': 2388 , 'NGC4535': 1954  , 'NGC3351': 775, 'NGC2835': 867, 'NGC0628':651, 'NGC3627':715}
 galvel = galveldic[galaxy]
 

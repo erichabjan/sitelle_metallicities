@@ -177,7 +177,7 @@ def reproject_sit(indata, in_sit_header, process_num, galaxy):
         mProject(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_{pn}.fits", 
                  f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_mp_{pn}.fits",  ### mp for muse projection
                  f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_2d_header.hdr",
-                 fullRegion=True, energyMode=True)
+                 fullRegion=True) #, energyMode=True
     
         ### Open and store reprojected wavelength channel
         sit_rep_out.append(fits.open(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_mp_{pn}.fits")[0].data)
@@ -774,7 +774,7 @@ def refit6312(inwave, influx, snval, phdata, galvel, mcit, mwebv):
 
 ### [OII]3727 MC error function
 
-def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, broad_in, redwave_in, iters, galactic_vel):
+def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, redwave_in, iters, galactic_vel):
     
     flux3727err = np.zeros(iters)
     velocity3727err = np.zeros(iters)
@@ -796,7 +796,7 @@ def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, broad_in, redwave
         s_fit = np.polyfit(fit_lam, fit_spec, 1)
         sfit_func = np.poly1d(s_fit)
 
-        spec = spec #- sfit_func(inwave)
+        spec = spec - sfit_func(inwave)
         spec[(1/(inwave * 10**-8) < 3650) | (1/(inwave * 10**-8) > 3850)] = 0
         
         try:
@@ -805,9 +805,12 @@ def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, broad_in, redwave
                                         theta=corr2theta(sitcube.params.axis_corr), 
                                         zpd_index=sitcube.params.zpd_index, 
                                         wavenumber=True, apodization=1, fmodel=fitshape, 
-                                        pos_def='1', pos_cov=3,
-                                        amp_def='1', amp_guess=3,
-                                        sigma_def='1', sigma_cov=5)
+                                        pos_def='1', 
+                                        pos_cov=3,
+                                        amp_def='1', 
+                                        amp_guess=3,
+                                        sigma_def='1', 
+                                        sigma_cov=5)
             
             wave2 = 1/(fit['lines_params'][0][2] * 10**-8)
             
@@ -836,54 +839,65 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
     param_list = []
     snr_arr = np.zeros(len(phdata))
 
-    broadening_gvar = gvar.gvar(1, 20)
-
     fitshape = 'sincgauss'
     OII3726 = Lines().get_line_cm1('[OII]3726')
     OII3729 = Lines().get_line_cm1('[OII]3729')
     ang3726, ang3729 = Lines().get_line_nm('[OII]3726') * 10, Lines().get_line_nm('[OII]3729') * 10
     wave1 = ((ang3729 - ang3726) / 1.4) + ang3726 
+    
+    conv = 10**8 / inwave**2
+    c = 299792
+    fwhm0 = incube.get_header()['HIERARCH line_fwhm']
+    sigma0 = fwhm0 / (2 * np.sqrt(2 * np.log(2) ))
+    
     for i in range(len(phdata)):
         
+        ### Cover flux per angstrom to flux per cm_1
         inspectrum = inspec[i]
-        inspectrum[np.isnan(inspectrum)] = 0
+        spec_cm = inspectrum #* conv
+        
+        ### Zero out any nan values
+        spec_cm[np.isnan(spec_cm)] = 0
+        
+        ### Find the reddened center wavelength
+        nii_vel = phdata[i]['NII6583_VEL']
+        region_vel = np.float64(nii_vel+ingalvel)
+        red3729 = wave1 * (1 + (region_vel/c))
+        red3729_cm = 1/(red3729 * 10**-8)
+        out_wave[i] = 1/(red3729_cm * 10**-8)
+        
+        ### Find noise regions inside of spectrum
+        n1_lower, n1_upper = np.where(inwave > red3729_cm - 450)[0][0], np.where(inwave > red3729_cm - 175)[0][0]
+        n2_lower, n2_upper = np.where(inwave > red3729_cm + 175)[0][0], np.where(inwave > red3729_cm + 700)[0][0]
 
-        wave3729 = 3728.815
-        c = 299792
-        red3729 = 1/((wave3729*(phdata[i]['NII6583_VEL']+ingalvel)/(c) + wave3729) * 10**-8)
-
-        out_wave[i] = wave3729*(phdata[i]['NII6583_VEL']+ingalvel)/(c) + wave3729
-
-        n1 = [np.where(inwave > red3729 - 450)[0][0],np.where(inwave > red3729 - 175)[0][0]]
-        n2 = [np.where(inwave > red3729 + 175)[0][0], np.where(inwave > red3729 + 700)[0][0]]
-
-        fit_lam = np.concatenate([inwave[n2[0]:n2[1]], inwave[n1[0]:n1[1]]])
-        fit_spec = np.concatenate([inspectrum[n2[0]:n2[1]], inspectrum[n1[0]:n1[1]]])
+        ### Fit a line to the noise
+        fit_lam = np.concatenate([inwave[n2_lower: n2_upper], inwave[n1_lower: n1_upper]])
+        fit_spec = np.concatenate([spec_cm[n2_lower: n2_upper], spec_cm[n1_lower: n1_upper]])
         s_fit = np.polyfit(fit_lam, fit_spec, 1)
         sfit_func = np.poly1d(s_fit)
-
-        #noise = (np.mean(inspectrum[n1[0]:n1[1]]) + np.mean(inspectrum[n2[0]:n2[1]])) / 2
-        noisestd = (np.std(inspectrum[n1[0]:n1[1]]) + np.std(inspectrum[n2[0]:n2[1]])) / 2
-        #inspectrum = (inspectrum) - (noise)
-        inspectrum = inspectrum #- sfit_func(inwave)
-        inspectrum[(1/(inwave * 10**-8) < 3650) | (1/(inwave * 10**-8) > 3850)] = 0
-
-        invel = phdata[i]['NII6583_VEL']+ingalvel
-        broad = phdata[i]['NII6583_SIGMA']
+        
+        # Calculate the standard deviation of the noise and subtract linear fit from spectrum
+        noisestd = (np.std(spec_cm[n2_lower: n2_upper]) + np.std(spec_cm[n1_lower: n1_upper])) / 2
+        sub_spec_cm = spec_cm - sfit_func(inwave)
+        
+        # Set any values outside of the filter range equal to zero
+        sn1_filter_lower_bound = 1/(inwave * 10**-8) < 3650
+        sn1_filter_upper_bound = 1/(inwave * 10**-8) > 3850
+        sub_spec_cm[(sn1_filter_lower_bound) | (sn1_filter_upper_bound)] = 0
         
         try:
-            fit = fit_lines_in_spectrum(inspectrum, [red3729], 
-                      step=incube.params.step, 
-                      order=incube.params.order, 
-                      nm_laser=incube.params.nm_laser,
-                      theta=corr2theta(incube.params.axis_corr), 
-                      zpd_index=incube.params.zpd_index, 
-                      wavenumber=True,
-                      apodization=1, 
-                      fmodel=fitshape,
-                      pos_def='1', pos_cov=10,
-                      amp_def='1', amp_guess=10,
-                      sigma_def='1', sigma_cov=10)
+            fit = fit_lines_in_spectrum(spectrum = sub_spec_cm, 
+                                        lines = [red3729_cm],
+                                        step = incube.params.step, 
+                                        order = incube.params.order, 
+                                        nm_laser = incube.params.nm_laser,
+                                        theta = corr2theta(incube.params.axis_corr), 
+                                        zpd_index = incube.params.zpd_index, 
+                                        wavenumber = True,
+                                        apodization = 1, 
+                                        fmodel = fitshape,
+                                        sigma_def='free',
+                                        sigma_guess = [sigma0])
             
             snr = fit['lines_params'][0][1] / noisestd
 
@@ -898,13 +912,14 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
 
                 out_fluxes[i], out_velocity[i] = flux, ((((wave2-wave1)/wave1)*(3*10**8)) * 10**-3) - ingalvel
 
-                out_fluxes_err[i], out_velocity_err[i] = mcerr3727(inspec[i], inwave, incube, noisestd, invel, broad, red3729, mcit, ingalvel)
+                out_fluxes_err[i], out_velocity_err[i] = np.nan, np.nan #mcerr3727(sub_spec_cm, inwave, incube, noisestd, invel, red3729, mcit, ingalvel)
             else:
                 out_fluxes[i] = np.nan
                 out_fluxes_err[i] = np.nan
                 out_velocity[i] = np.nan
                 out_velocity_err[i] = np.nan
-        except:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             out_fluxes[i] = np.nan
             out_fluxes_err[i] = np.nan
             out_velocity[i] = np.nan
@@ -918,6 +933,7 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
     mwcorr_err = remove(extinction.odonnell94(out_wave, inebv*R_V, R_V), out_fluxes_err)
 
     return mwcorr * 10**20, mwcorr_err * 10**20, out_velocity, out_velocity_err, out_wave, np.array(param_list), snr_arr
+    #return mwcorr, mwcorr_err, out_velocity, out_velocity_err, out_wave, np.array(param_list), snr_arr
 
 ### Correct for extinction
 

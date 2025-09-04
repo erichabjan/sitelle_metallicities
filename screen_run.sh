@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define your target (galaxy name or object)
-TARGET="NGC3351"
+TARGET="NGC0628"
 
 # Screen session name
 SESSION_NAME="sitelle_${TARGET}_run"

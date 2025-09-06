@@ -912,7 +912,7 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
 
                 out_fluxes[i], out_velocity[i] = flux, ((((wave2-wave1)/wave1)*(3*10**8)) * 10**-3) - ingalvel
 
-                out_fluxes_err[i], out_velocity_err[i] = np.nan, np.nan #mcerr3727(sub_spec_cm, inwave, incube, noisestd, invel, red3729, mcit, ingalvel)
+                out_fluxes_err[i], out_velocity_err[i] = mcerr3727(sub_spec_cm, inwave, incube, noisestd, invel, red3729, mcit, ingalvel)
             else:
                 out_fluxes[i] = np.nan
                 out_fluxes_err[i] = np.nan
@@ -933,7 +933,6 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
     mwcorr_err = remove(extinction.odonnell94(out_wave, inebv*R_V, R_V), out_fluxes_err)
 
     return mwcorr * 10**20, mwcorr_err * 10**20, out_velocity, out_velocity_err, out_wave, np.array(param_list), snr_arr
-    #return mwcorr, mwcorr_err, out_velocity, out_velocity_err, out_wave, np.array(param_list), snr_arr
 
 ### Correct for extinction
 

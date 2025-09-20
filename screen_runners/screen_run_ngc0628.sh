@@ -10,7 +10,7 @@ SESSION_NAME="sitelle_${TARGET}_run"
 CONDA_ENV="/home/habjan/.conda/envs/orb3" 
 
 # Number of CPUs to allow
-NUM_CPUS=16
+NUM_CPUS=4
 
 # Path to script (no target here)
 SCRIPT_PATH="/home/habjan/SITELLE/sitelle_metallicities/runner.py"

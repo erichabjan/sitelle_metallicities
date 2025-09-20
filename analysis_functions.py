@@ -92,7 +92,7 @@ def skyback(incube, phdata, ingal, cube2d_wcs, in_coords, galaxy_v, mc=False):
     jmax = y + rmax + 1
     xlist = []
     ylist = []
-    buffval = 50
+    buffval = 150
 
     for i in np.arange(imin, imax):
         if 0 + buffval <= i <= 2048 - buffval:
@@ -774,7 +774,7 @@ def refit6312(inwave, influx, snval, phdata, galvel, mcit, mwebv):
 
 ### [OII]3727 MC error function
 
-def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, redwave_in, iters, galactic_vel):
+def mcerr3727(inputflux, inwave, sitcube, gnoise, redwave_in, iters, galactic_vel):
     
     flux3727err = np.zeros(iters)
     velocity3727err = np.zeros(iters)
@@ -784,6 +784,9 @@ def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, redwave_in, iters
     wave1 = ((ang3729 - ang3726) / 1.4) + ang3726 
     #OII3726 = Lines().get_line_cm1('[OII]3726')
     OII3729 = Lines().get_line_cm1('[OII]3729')
+    
+    fwhm0 = sitcube.get_header()['HIERARCH line_fwhm']
+    sigma0 = fwhm0 / (2 * np.sqrt(2 * np.log(2) ))
     
     for i in range(iters):
         spec = inputflux + np.random.normal(0, gnoise, len(inputflux))
@@ -800,17 +803,18 @@ def mcerr3727(inputflux, inwave, sitcube, gnoise, velocity_in, redwave_in, iters
         spec[(1/(inwave * 10**-8) < 3650) | (1/(inwave * 10**-8) > 3850)] = 0
         
         try:
-            fit = fit_lines_in_spectrum(spec, [redwave_in], step=sitcube.params.step, 
-                                        order=sitcube.params.order, nm_laser=sitcube.params.nm_laser, 
+            fit = fit_lines_in_spectrum(spectrum = spec, 
+                                        lines = [redwave_in], 
+                                        step=sitcube.params.step, 
+                                        order=sitcube.params.order, 
+                                        nm_laser=sitcube.params.nm_laser, 
                                         theta=corr2theta(sitcube.params.axis_corr), 
                                         zpd_index=sitcube.params.zpd_index, 
-                                        wavenumber=True, apodization=1, fmodel=fitshape, 
-                                        pos_def='1', 
-                                        pos_cov=3,
-                                        amp_def='1', 
-                                        amp_guess=3,
-                                        sigma_def='1', 
-                                        sigma_cov=5)
+                                        wavenumber=True, 
+                                        apodization=1, 
+                                        fmodel=fitshape, 
+                                        sigma_def='free',
+                                        sigma_guess = [sigma0])
             
             wave2 = 1/(fit['lines_params'][0][2] * 10**-8)
             
@@ -912,7 +916,7 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
 
                 out_fluxes[i], out_velocity[i] = flux, ((((wave2-wave1)/wave1)*(3*10**8)) * 10**-3) - ingalvel
 
-                out_fluxes_err[i], out_velocity_err[i] = mcerr3727(sub_spec_cm, inwave, incube, noisestd, invel, red3729, mcit, ingalvel)
+                out_fluxes_err[i], out_velocity_err[i] = mcerr3727(sub_spec_cm, inwave, incube, noisestd, red3729_cm, mcit, ingalvel)
             else:
                 out_fluxes[i] = np.nan
                 out_fluxes_err[i] = np.nan

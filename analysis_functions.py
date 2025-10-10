@@ -107,7 +107,7 @@ def skyback(incube, phdata, ingal, cube2d_wcs, in_coords, galaxy_v, mc=False):
                         ylist.append(j)
 
     inpix = (xlist, ylist)
-    outspec = np.nanmedian(incube[inpix], axis=0)
+    outspec = np.nanmedian(incube[:, xlist, ylist], axis=1)
     
     if mc == True:
         
@@ -151,7 +151,7 @@ def skyback(incube, phdata, ingal, cube2d_wcs, in_coords, galaxy_v, mc=False):
                                 xlist.append(i)
                                 ylist.append(j)
                                 
-            mc_spec.append(np.nanmedian(incube[(xlist, ylist)], axis=0))
+            mc_spec.append(np.nanmedian(incube[:, xlist, ylist], axis=1))
         
         mc_spec = np.array(mc_spec)
         mc_ave = np.mean(mc_spec, axis=0)
@@ -164,23 +164,27 @@ def skyback(incube, phdata, ingal, cube2d_wcs, in_coords, galaxy_v, mc=False):
 
 ### Function to reproject the data cube using MontagePy
 
-def reproject_sit(indata, in_sit_header, process_num, galaxy):
+def reproject_sit(indata, in_sit_header, process_num, galaxy, header_file):
 
     sit_rep_out = []
     pn = f'{process_num}'
 
     for i in range(indata.shape[2]):
+        
         ### Make fits file for a wavelength channel
-        fits.PrimaryHDU(data = indata[:,:,i], header = in_sit_header).writeto(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_{pn}.fits", overwrite=True) 
+        fits.PrimaryHDU(data = indata[:,:,i], header = in_sit_header).writeto(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_{i}_{pn}.fits", overwrite=True) 
 
         ### Reproject and save using MontagePy
-        mProject(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_{pn}.fits", 
-                 f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_mp_{pn}.fits",  ### mp for muse projection
-                 f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_2d_header.hdr",
-                 fullRegion=True) #, energyMode=True
+        mProject(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_{i}_{pn}.fits", 
+                 f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_mp_{i}_{pn}.fits",  ### mp for muse projection
+                 header_file,
+                 fullRegion=True, energyMode=False)
+        
+        ### Import
+        oii_flux_mp_i = fits.open(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_mp_{i}_{pn}.fits")[0].data
     
         ### Open and store reprojected wavelength channel
-        sit_rep_out.append(fits.open(f"/home/habjan/SITELLE/data/Montage_data/{galaxy}_SITELLE_wave_channel_mp_{pn}.fits")[0].data)
+        sit_rep_out.append(oii_flux_mp_i)
 
     return sit_rep_out
 
@@ -1353,12 +1357,12 @@ def metal(indata, err, iters):
                                                     in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
 
     ### O++ derviation with T[OIII] + n([OII])
-    O3_OIII_OII, O3_OIII_OII_err = np.zeros(len(indata)), np.zeros(len(indata))
+    O3_OIII_SII, O3_OIII_SII_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        O3_OIII_OII[i], O3_OIII_OII_err[i] = ion_function(pyneb_ion=O3, in_flux=oiii5006[i], in_temp=tb12[i], in_den=oii_ne[i], 
+        O3_OIII_SII[i], O3_OIII_SII_err[i] = ion_function(pyneb_ion=O3, in_flux=oiii5006[i], in_temp=tb12[i], in_den=sii_ne[i], 
                                                     in_eval='L(5007)', in_h=hb[i], mc_iterations=iters, 
                                                     in_flux_err=oiii5006_err[i], in_temp_err=tb12_err[i], 
-                                                    in_den_err=oii_ne_err[i], in_h_err=hb_err[i])
+                                                    in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
 
     ### O++ derviation with T0(O2+) + n([OII])
     O3_T0_OII, O3_T0_OII_err = np.zeros(len(indata)), np.zeros(len(indata))
@@ -1376,80 +1380,80 @@ def metal(indata, err, iters):
                                                 in_flux_err=oiii5006_err[i], in_temp_err=t0_err[i], 
                                                 in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
     
-    ### Z derivation with O+ (T([NII]) + [OII]3727 + n([OII])) and O++ (T0 + n([OII]))
-    Z_T0, Z_T0_err = np.zeros(len(indata)), np.zeros(len(indata))
+    ### O/H derivation with O+ (T([OII]) + [OII]3727 + n([SII])) and O++ (T0 + n([SII]))
+    Z_T0_OII, Z_T0_OII_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        Z_T0[i], Z_T0_err[i] = O_elem_function(O2_ion=O2_NII_3727_OII[i], O3_ion=O3_T0_OII[i], 
-                                               O2_ion_err=O2_NII_3727_OII_err[i], O3_ion_err=O3_T0_OII_err[i])
+        Z_T0_OII[i], Z_T0_OII_err[i] = O_elem_function(O2_ion=O2_OII_3727_SII[i], O3_ion=O3_T0_SII[i], 
+                                               O2_ion_err=O2_OII_3727_SII_err[i], O3_ion_err=O3_T0_SII_err[i])
 
-    ### Z derivation with O+ (T([NII]) + [OII]3727 + n([OII])) and O++ (T([SIII]) + n([OII]))
-    Z_SIII_OII, Z_SIII_OII_err = np.zeros(len(indata)), np.zeros(len(indata))
+    ### O/H derivation with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T([SIII]) + n([SII]))
+    Z_SIII_SII, Z_SIII_SII_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        Z_SIII_OII[i], Z_SIII_OII_err[i] = O_elem_function(O2_ion=O2_NII_3727_OII[i], O3_ion=O3_SIII_OII[i], 
-                                                   O2_ion_err=O2_NII_3727_OII_err[i], O3_ion_err=O3_SIII_OII_err[i])
+        Z_SIII_SII[i], Z_SIII_SII_err[i] = O_elem_function(O2_ion=O2_NII_3727_SII[i], O3_ion=O3_SIII_SII[i], 
+                                                   O2_ion_err=O2_NII_3727_SII_err[i], O3_ion_err=O3_SIII_SII_err[i])
     
-    ### Z derivation with O+ (T([NII]) + [OII]7320,7330 + n([SII])) and O++ (T([SIII]) + n([SII])) - MUSE only quantities
-    Z_MUSE_SIII, Z_MUSE_SIII_err = np.zeros(len(indata)), np.zeros(len(indata))
+    ### O/H derivation with O+ (T([NII]) + [OII]7320,7330 + n([SII])) and O++ (T([T0]) + n([SII]))
+    Z_7325, Z_7325_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        Z_MUSE_SIII[i], Z_MUSE_SIII_err[i] = O_elem_function(O2_ion=O2_NII_7325_SII[i], O3_ion=O3_SIII_SII[i], 
-                                                   O2_ion_err=O2_NII_7325_SII_err[i], O3_ion_err=O3_SIII_SII_err[i])
-
-    ### Z derivation with O+ (T([NII]) + [OII]7320,7330 + n([SII])) and O++ (T0 + n([SII])) - MUSE only quantities
-    Z_MUSE_T0, Z_MUSE_T0_err = np.zeros(len(indata)), np.zeros(len(indata))
-    for i in range(len(indata)):
-        Z_MUSE_T0[i], Z_MUSE_T0_err[i] = O_elem_function(O2_ion=O2_NII_7325_SII[i], O3_ion=O3_T0_SII[i], 
+        Z_7325[i], Z_7325_err[i] = O_elem_function(O2_ion=O2_NII_7325_SII[i], O3_ion=O3_T0_SII[i], 
                                                    O2_ion_err=O2_NII_7325_SII_err[i], O3_ion_err=O3_T0_SII_err[i])
+
+    ### O/H derivation with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T0 + n([SII])) - MUSE only quantities
+    Z_T0_NII, Z_T0_NII_err = np.zeros(len(indata)), np.zeros(len(indata))
+    for i in range(len(indata)):
+        Z_T0_NII[i], Z_T0_NII_err[i] = O_elem_function(O2_ion=O2_NII_3727_SII[i], O3_ion=O3_T0_SII[i], 
+                                                   O2_ion_err=O2_NII_3727_SII_err[i], O3_ion_err=O3_T0_SII_err[i])
         
-    ### Z derivation with O+ (T[NII] and [OII]3727) and O++ (T[OIII] + n([OII]))
+    ### O/H derivation with O+ (T[NII] + [OII]3727 + n([SII])) and O++ (T[OIII] + n([SII]))
     Z_OIII, Z_OIII_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        Z_OIII[i], Z_OIII_err[i] = O_elem_function(O2_ion=O2_NII_3727_OII[i], O3_ion=O3_OIII_OII[i], 
-                                                   O2_ion_err=O2_NII_3727_OII_err[i], O3_ion_err=O3_OIII_OII_err[i])
+        Z_OIII[i], Z_OIII_err[i] = O_elem_function(O2_ion=O2_NII_3727_SII[i], O3_ion=O3_OIII_SII[i], 
+                                                   O2_ion_err=O2_NII_3727_SII_err[i], O3_ion_err=O3_OIII_SII_err[i])
         
-    ### N+ derviation with n([OII])
-    N2_ion_h, N2_ion_h_err = np.zeros(len(indata)), np.zeros(len(indata))
-    for i in range(len(indata)):
-        N2_ion_h[i], N2_ion_h_err[i] = ion_function(pyneb_ion=N2, in_flux=nii6584[i], in_temp=niitemp[i], in_den=oii_ne[i], 
-                                        in_eval='L(6584)', in_h=hb[i], mc_iterations=iters, 
-                                        in_flux_err=nii6584_err[i], in_temp_err=niitemp_err[i], 
-                                        in_den_err=oii_ne_err[i], in_h_err=hb_err[i])
-    N2_ion = N2_ion_h / O2_NII_3727_OII
-    N2_ion_err = N2_ion * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_OII_err/O2_NII_3727_OII)**2)
-
-    ### N+ derviation with n([SII])
+    ### N+ derviation with n([SII]) and Te([NII])
     N2_ion_h, N2_ion_h_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
         N2_ion_h[i], N2_ion_h_err[i] = ion_function(pyneb_ion=N2, in_flux=nii6584[i], in_temp=niitemp[i], in_den=sii_ne[i], 
                                         in_eval='L(6584)', in_h=hb[i], mc_iterations=iters, 
                                         in_flux_err=nii6584_err[i], in_temp_err=niitemp_err[i], 
                                         in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
-    N2_ion_SII = N2_ion_h / O2_NII_3727_SII
-    N2_ion_SII_err = N2_ion_SII * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_SII_err/O2_NII_3727_SII)**2)
+    N2_ion_NII_SII = N2_ion_h / O2_NII_3727_SII
+    N2_ion_NII_SII_err = N2_ion_NII_SII * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_SII_err/O2_NII_3727_SII)**2)
 
-    ### Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([OII])) and O++ (T[SIII] + n([OII]))
+    ### N+ derviation with n([SII]) and Te([OII])
+    N2_ion_h, N2_ion_h_err = np.zeros(len(indata)), np.zeros(len(indata))
+    for i in range(len(indata)):
+        N2_ion_h[i], N2_ion_h_err[i] = ion_function(pyneb_ion=N2, in_flux=nii6584[i], in_temp=oiitemp[i], in_den=sii_ne[i], 
+                                        in_eval='L(6584)', in_h=hb[i], mc_iterations=iters, 
+                                        in_flux_err=nii6584_err[i], in_temp_err=oiitemp_err[i], 
+                                        in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
+    N2_ion_OII_SII = N2_ion_h / O2_NII_3727_SII
+    N2_ion_OII_SII_err = N2_ion_OII_SII * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_SII_err/O2_NII_3727_SII)**2)
+
+    ### Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T[SIII] + n([SII]))
     N_ICF, N_ICF_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_OII[i], O3_in = O3_SIII_OII[i], 
-                                       O2_in_err = O2_NII_3727_OII_err[i], O3_in_err = O3_SIII_OII_err[i], iterations = iters)
-    N_SIII = np.log10(N2_ion * N_ICF)
-    N_SIII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_err/N2_ion)**2)
+        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_SII[i], O3_in = O3_SIII_SII[i], 
+                                       O2_in_err = O2_NII_3727_SII_err[i], O3_in_err = O3_SIII_SII_err[i], iterations = iters)
+    N_SIII = np.log10(N2_ion_NII_SII * N_ICF)
+    N_SIII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
 
-    ###Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([OII])) and O++ (T0 + n([OII]))
+    ###Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T0 + n([SII]))
     N_ICF, N_ICF_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_OII[i], O3_in = O3_T0_OII[i], 
-                                       O2_in_err = O2_NII_3727_OII_err[i], O3_in_err = O3_T0_OII_err[i], iterations = iters)
-    N_T0 = np.log10(N2_ion * N_ICF)
-    N_T0_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_err/N2_ion)**2)
+        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_SII[i], O3_in = O3_T0_SII[i], 
+                                       O2_in_err = O2_NII_3727_SII_err[i], O3_in_err = O3_T0_SII_err[i], iterations = iters)
+    N_T0 = np.log10(N2_ion_NII_SII * N_ICF)
+    N_T0_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
 
     indata.add_columns([O2_NII_3727_OII, O2_NII_3727_OII_err, O2_NII_7325_OII, O2_NII_7325_OII_err, O2_OII_3727_SII, O2_OII_3727_SII_err, O2_NII_3727_SII, O2_NII_3727_SII_err, O2_NII_7325_SII, O2_NII_7325_SII_err,
-                        O3_SIII_OII, O3_SIII_OII_err, O3_SIII_SII, O3_SIII_SII_err, O3_T0_SII, O3_T0_SII_err, O3_OIII_OII, O3_OIII_OII_err, O3_T0_OII, O3_T0_OII_err,
-                        Z_T0, Z_T0_err, Z_SIII_OII, Z_SIII_OII_err, Z_MUSE_SIII, Z_MUSE_SIII_err, Z_MUSE_T0, Z_MUSE_T0_err, Z_OIII, Z_OIII_err,
-                        N2_ion, N2_ion_err, N2_ion_SII, N2_ion_SII_err, N_T0, N_T0_err, N_SIII, N_SIII_err],
+                        O3_SIII_OII, O3_SIII_OII_err, O3_SIII_SII, O3_SIII_SII_err, O3_T0_SII, O3_T0_SII_err, O3_OIII_SII, O3_OIII_SII_err, O3_T0_OII, O3_T0_OII_err,
+                        Z_T0_OII, Z_T0_OII_err, Z_SIII_SII, Z_SIII_SII_err, Z_7325, Z_7325_err, Z_T0_NII, Z_T0_NII_err, Z_OIII, Z_OIII_err,
+                        N2_ion_NII_SII, N2_ion_NII_SII_err, N2_ion_OII_SII, N2_ion_OII_SII_err, N_T0, N_T0_err, N_SIII, N_SIII_err],
                         names=('O2_NII_3727_OII', 'O2_NII_3727_OII_ERR', 'O2_NII_7325_OII', 'O2_NII_7325_OII_ERR', 'O2_OII_3727_SII', 'O2_OII_3727_SII_ERR', 'O2_NII_3727_SII', 'O2_NII_3727_SII_ERR', 'O2_NII_7325_SII', 'O2_NII_7325_SII_ERR',
-                               'O3_SIII_OII', 'O3_SIII_OII_ERR', 'O3_SIII_SII', 'O3_SIII_SII_ERR', 'O3_T0_SII', 'O3_T0_SII_ERR', 'O3_OIII_OII', 'O3_OIII_OII_ERR', 'O3_T0_OII', 'O3_T0_OII_ERR',
-                               'OH_T0_OII', 'OH_T0_OII_ERR', 'OH_SIII_OII', 'OH_SIII_OII_ERR', 'OH_SIII_SII', 'OH_SIII_SII_ERR', 'OH_T0_SII', 'OH_T0_SII_ERR', 'OH_OIII_OII', 'OH_OIII_OII_ERR',
-                               'N2_ABUN_OII', 'N2_ABUN_OII_ERR', 'N2_ABUN_SII', 'N2_ABUN_SII_ERR', 'N_T0', 'N_T0_ERR', 'N_SIII', 'N_SIII_ERR'))
+                               'O3_SIII_OII', 'O3_SIII_OII_ERR', 'O3_SIII_SII', 'O3_SIII_SII_ERR', 'O3_T0_SII', 'O3_T0_SII_ERR', 'O3_OIII_SII', 'O3_OIII_SII_ERR', 'O3_T0_OII', 'O3_T0_OII_ERR',
+                               'OH_T0_OII', 'OH_T0_OII_ERR', 'OH_SIII_SII', 'OH_SIII_SII_ERR', 'OH_7325', 'OH_7325_ERR', 'OH_T0_NII', 'OH_T0_NII_ERR', 'OH_OIII_SII', 'OH_OIII_SII_ERR',
+                               'N2_ABUN_NII', 'N2_ABUN_NII_ERR', 'N2_ABUN_OII', 'N2_ABUN_OII_ERR', 'N_T0', 'N_T0_ERR', 'N_SIII', 'N_SIII_ERR'))
 
     return indata
 

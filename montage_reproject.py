@@ -127,9 +127,8 @@ coord_arr = coord_dic[galaxy]
 ### Make a FITS file from the ORCS spectral cube and import it
 
 montage_path = '/home/habjan/SITELLE/data/Montage_data'
-cube.to_fits(montage_path + f"/{galaxy}_SITELLE.fits")
+#cube.to_fits(montage_path + f"/{galaxy}_SITELLE.fits")
 cube_fits = fits.open(montage_path + f"/{galaxy}_SITELLE.fits")
-
 
 # WCS Correction on SITELLE deep frame
 
@@ -157,7 +156,8 @@ wave = cube.params['base_axis'].astype(np.float64)
 
 ### Extract a sky background spectrum for the SITELLE cube
 
-skyspec, outpix, mc_percent = af.skyback(cube_fits[0].data, musedata, galaxy, WCS(cube_fits[0].header, naxis=2), coord_arr, galvel, mc=True)
+#skyspec, outpix, mc_percent = af.skyback(cube_fits[0].data, musedata, galaxy, WCS(cube_fits[0].header, naxis=2), coord_arr, galvel, mc=True)
+skyspec, outpix = af.skyback(cube_fits[0].data, musedata, galaxy, WCS(cube_fits[0].header, naxis=2), coord_arr, galvel, mc=False)
 
 
 ### Sky subtract the entire cube (I know this line looks weird, I am just subtracting the sky background spectrum from every spectrum)
@@ -174,11 +174,11 @@ mGetHdr(f"/home/habjan/SITELLE/data/data_raw_intermediate/{galaxy}_nebulae_mask_
 ### Convert the cube to flux / sr (energy density) using the SITELLE pixel size and save the cube
 flux_per_sr = (cube_axes) * (1 / (0.321)**2) * (206265)**2
 
-fits.PrimaryHDU(data = flux_per_sr, header = cube_fits[0].header).writeto(montage_path + f"/{galaxy}_SITELLE.fits", overwrite=True)
+fits.PrimaryHDU(data = flux_per_sr, header = cube_fits[0].header).writeto(montage_path + f"/{galaxy}_SITELLE_sb.fits", overwrite=True)
 
 ### Reproject the cube into MUSE dimensions
 
-montage_dict = mProjectCube(montage_path + f"/{galaxy}_SITELLE.fits",
+montage_dict = mProjectCube(montage_path + f"/{galaxy}_SITELLE_sb.fits",
                             montage_path + f"/{galaxy}_SITELLE_mp.fits",
                             montage_header,
                             energyMode=False, 

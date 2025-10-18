@@ -72,8 +72,11 @@ inter_data_path = '/home/habjan/SITELLE/data/data_raw_intermediate'
 
 import argparse
 import os
-
-galaxy = 'NGC0628'
+ 
+parser = argparse.ArgumentParser(description="Script that accepts a string input.")
+parser.add_argument("input_string", type=str, help="The input string to process")
+args = parser.parse_args()
+galaxy = args.input_string
 
 galveldic = {'NGC4254': 2388 , 'NGC4535': 1954  , 'NGC3351': 775, 'NGC2835': 867, 'NGC0628':651, 'NGC3627':715}
 galvel = galveldic[galaxy]

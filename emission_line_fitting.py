@@ -12,6 +12,7 @@ from scipy.optimize import curve_fit
 from scipy.integrate import quad
 import numpy.linalg as la
 import multiprocessing as mp
+import os
 import math
 import extinction
 from extinction import apply, remove
@@ -300,9 +301,17 @@ cube_fits_mp[1].data = new_wave
 
 products_data_path = '/home/habjan/SITELLE/data/data_products'
 
-refitdata.write(inter_data_path  + f'/{galaxy}_refit+SITELLEfits_data.fits', overwrite=True)  #, overwrite=True
-sit_spec.writeto(products_data_path + f'/{galaxy}_SITELLE_Spectra.fits', overwrite=True)
-cube_fits.writeto(products_data_path + f"/{galaxy}_SITELLE.fits", overwrite=True, output_verify='fix')
-cube_fits_mp.writeto(products_data_path + f"/{galaxy}_SITELLE_mp.fits", overwrite=True)
+refitdata.write(inter_data_path  + f'/{galaxy}_refit+SITELLEfits_data.fits', 
+                overwrite=os.path.exists(inter_data_path  + f'/{galaxy}_refit+SITELLEfits_data.fits'))
+
+sit_spec.writeto(products_data_path + f'/{galaxy}_SITELLE_Spectra.fits', 
+                 overwrite=os.path.exists(products_data_path + f'/{galaxy}_SITELLE_Spectra.fits'))
+
+cube_fits.writeto(products_data_path + f"/{galaxy}_SITELLE.fits", 
+                  overwrite=os.path.exists(products_data_path + f"/{galaxy}_SITELLE.fits"), 
+                  output_verify='fix')
+
+cube_fits_mp.writeto(products_data_path + f"/{galaxy}_SITELLE_mp.fits", 
+                     overwrite=os.path.exists(products_data_path + f"/{galaxy}_SITELLE_mp.fits"))
 
 print('Emission Line fitting ran successfully.')

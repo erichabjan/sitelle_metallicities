@@ -20,6 +20,8 @@ import orb
 from astropy.nddata import NDData, Cutout2D
 from astropy.wcs import WCS, find_all_wcs
 from astropy.wcs.utils import fit_wcs_from_points, pixel_to_skycoord, skycoord_to_pixel
+from astropy.wcs.utils import proj_plane_pixel_scales, proj_plane_pixel_area
+import astropy.units as u
 
 import astropy
 import astropy.units as u
@@ -69,6 +71,7 @@ import analysis_functions as af
 inter_data_path = '/home/habjan/SITELLE/data/data_raw_intermediate'
 
 import argparse
+import os
 
 galaxy = 'NGC0628'
 
@@ -127,8 +130,20 @@ coord_arr = coord_dic[galaxy]
 ### Make a FITS file from the ORCS spectral cube and import it
 
 montage_path = '/home/habjan/SITELLE/data/Montage_data'
-#cube.to_fits(montage_path + f"/{galaxy}_SITELLE.fits")
-cube_fits = fits.open(montage_path + f"/{galaxy}_SITELLE.fits")
+
+if os.path.exists(montage_path + f"/{galaxy}_SITELLE.fits"):
+    
+    os.remove(montage_path + f"/{galaxy}_SITELLE.fits")
+    cube.to_fits(montage_path + f"/{galaxy}_SITELLE.fits")
+    cube_fits = fits.open(montage_path + f"/{galaxy}_SITELLE.fits")
+    print(f'Successfully downloaded SITELLE data cube for {galaxy}')
+
+else:
+
+    cube.to_fits(montage_path + f"/{galaxy}_SITELLE.fits")
+    cube_fits = fits.open(montage_path + f"/{galaxy}_SITELLE.fits")
+    print(f'Successfully downloaded SITELLE data cube for {galaxy}')
+    
 
 # WCS Correction on SITELLE deep frame
 
@@ -172,9 +187,14 @@ montage_header = montage_path + f"/{galaxy}_muse_2d_header.hdr"
 mGetHdr(f"/home/habjan/SITELLE/data/data_raw_intermediate/{galaxy}_nebulae_mask_V2.fits", montage_header)
 
 ### Convert the cube to flux / sr (energy density) using the SITELLE pixel size and save the cube
-flux_per_sr = (cube_axes) * (1 / (0.321)**2) * (206265)**2
+w = WCS(cube_fits[0].header, naxis=2)
+scales = proj_plane_pixel_scales(w) * u.deg
+scales_arcsec = scales.to(u.arcsec).to_value(u.arcsec)
 
-fits.PrimaryHDU(data = flux_per_sr, header = cube_fits[0].header).writeto(montage_path + f"/{galaxy}_SITELLE_sb.fits", overwrite=True)
+flux_per_sr = (cube_axes) * (1 / (np.mean(scales_arcsec))**2) * (206265)**2
+
+fits.PrimaryHDU(data = flux_per_sr, header = cube_fits[0].header).writeto(montage_path + f"/{galaxy}_SITELLE_sb.fits", 
+                                                                          overwrite=os.path.exists(montage_path + f"/{galaxy}_SITELLE_sb.fits"))
 
 ### Reproject the cube into MUSE dimensions
 
@@ -202,8 +222,13 @@ else:
 ### Import MUSE projection of the SITELLE cube
 
 results = fits.open(montage_path + f"/{galaxy}_SITELLE_mp.fits")
-sit_data_mp = results[0].data * (1 / (206265)**2) * (0.2)**2
 sit_mp_header = results[0].header
+
+w = WCS(sit_mp_header, naxis=2)
+scales = proj_plane_pixel_scales(w) * u.deg
+scales_arcsec = scales.to(u.arcsec).to_value(u.arcsec)
+
+sit_data_mp = results[0].data * (1 / (206265)**2) * (np.mean(scales_arcsec))**2
 
 ### Make fits images for both projections of the SITELLE data
 
@@ -239,8 +264,14 @@ spec_hdu = fits.HDUList([primary_hdu, image_hdu])
 
 ### save the original SITELLE data cube, the reprojected SITELLE data cube, and spectra
 
-spec_hdu.writeto(inter_data_path + f'/{galaxy}_SITELLE_Spectra.fits', overwrite=True)
-cube_fits.writeto(inter_data_path + f"/{galaxy}_SITELLE.fits", overwrite=True, output_verify='fix')
-cube_fits_mp.writeto(inter_data_path + f"/{galaxy}_SITELLE_mp.fits", overwrite=True)
+spec_hdu.writeto(inter_data_path + f'/{galaxy}_SITELLE_Spectra.fits', 
+                 overwrite=os.path.exists(inter_data_path + f'/{galaxy}_SITELLE_Spectra.fits'))
+
+cube_fits.writeto(inter_data_path + f"/{galaxy}_SITELLE.fits", 
+                  overwrite=os.path.exists(inter_data_path + f"/{galaxy}_SITELLE.fits"), 
+                  output_verify='fix')
+
+cube_fits_mp.writeto(inter_data_path + f"/{galaxy}_SITELLE_mp.fits", 
+                     overwrite=os.path.exists(inter_data_path + f"/{galaxy}_SITELLE_mp.fits"))
 
 print('Reprojection code ran successfully')

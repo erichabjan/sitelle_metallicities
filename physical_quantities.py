@@ -79,9 +79,6 @@ if __name__ == "__main__":
 results2 = [mplist2[i].get() for i in range(len(mplist2))]
 metdata = vstack(results2)
 
-metlen = len(np.where(~np.isnan(metdata['OH_T0_OII']))[0])
-print(f'{metlen} Metallicity measurements')
-
 # Save Metallicity Results
 
 metdata.write(inter_data_path + f'/{galaxy}_physdata_MUSE+SITELLE.fits', overwrite=True)

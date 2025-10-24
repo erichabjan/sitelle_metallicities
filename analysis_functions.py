@@ -944,25 +944,34 @@ def fit_3727(phdata, inspec, inwave, incube, ingalvel, inebv, insnval, mcit):
 
 ### Correct for extinction
 
+def corr_mc(in_wave, in_A_V, in_A_V_err, in_R_V, in_flux, in_flux_err, mc_len = 10**3):
+    
+    errs = np.array([remove(extinction.odonnell94(np.array([in_wave]), np.random.normal(in_A_V, in_A_V_err), in_R_V), np.random.normal(in_flux, in_flux_err))[0] for i in range(mc_len)])
+    
+    corr_flux_err = np.nanstd(errs[errs < 10**30])
+    
+    return corr_flux_err
+
 def corr(indata, in_w_7319, in_w_7330, in_w_5755, in_w_6312, in_w_3727):
     
     R_V = 3.1 
     A_V = np.array([indata[i]['EBV'] for i in range(len(indata))]) * R_V
+    A_V_err = np.array([indata[i]['EBV_ERR'] for i in range(len(indata))]) * R_V
 
     corr7319 = np.array([remove(extinction.odonnell94(np.array([in_w_7319[i]]), A_V[i], R_V), indata[i]['OII7319_FLUX_REFIT'])[0] for i in range(len(indata))])
-    corr7319err = np.array([remove(extinction.odonnell94(np.array([in_w_7319[i]]), A_V[i], R_V), indata[i]['OII7319_FLUX_REFIT_ERR'])[0] for i in range(len(indata))])
+    corr7319err = np.array([corr_mc(in_wave = in_w_7319[i], in_A_V = A_V[i], in_A_V_err = A_V_err[i], in_R_V = R_V, in_flux = indata[i]['OII7319_FLUX_REFIT'], in_flux_err = indata[i]['OII7319_FLUX_REFIT_ERR'], mc_len = 10**3) for i in range(len(indata))])
 
     corr7330 = np.array([remove(extinction.odonnell94(np.array([in_w_7330[i]]), A_V[i], R_V), indata[i]['OII7330_FLUX_REFIT'])[0] for i in range(len(indata))])
-    corr7330err = np.array([remove(extinction.odonnell94(np.array([in_w_7330[i]]), A_V[i], R_V), indata[i]['OII7330_FLUX_REFIT_ERR'])[0] for i in range(len(indata))])
+    corr7330err = np.array([corr_mc(in_wave = in_w_7330[i], in_A_V = A_V[i], in_A_V_err = A_V_err[i], in_R_V = R_V, in_flux = indata[i]['OII7330_FLUX_REFIT'], in_flux_err = indata[i]['OII7330_FLUX_REFIT_ERR'], mc_len = 10**3) for i in range(len(indata))])
 
     corr5755 = np.array([remove(extinction.odonnell94(np.array([in_w_5755[i]]), A_V[i], R_V), indata[i]['NII5754_FLUX_REFIT'])[0] for i in range(len(indata))])
-    corr5755err = np.array([remove(extinction.odonnell94(np.array([in_w_5755[i]]), A_V[i], R_V), indata[i]['NII5754_FLUX_REFIT_ERR'])[0] for i in range(len(indata))])
+    corr5755err = np.array([corr_mc(in_wave = in_w_5755[i], in_A_V = A_V[i], in_A_V_err = A_V_err[i], in_R_V = R_V, in_flux = indata[i]['NII5754_FLUX_REFIT'], in_flux_err = indata[i]['NII5754_FLUX_REFIT_ERR'], mc_len = 10**3) for i in range(len(indata))])
     
     corr6312 = np.array([remove(extinction.odonnell94(np.array([in_w_6312[i]]), A_V[i], R_V), indata[i]['SIII6312_FLUX_REFIT'])[0] for i in range(len(indata))])
-    corr6312err = np.array([remove(extinction.odonnell94(np.array([in_w_6312[i]]), A_V[i], R_V), indata[i]['SIII6312_FLUX_REFIT_ERR'])[0] for i in range(len(indata))])
+    corr6312err = np.array([corr_mc(in_wave = in_w_6312[i], in_A_V = A_V[i], in_A_V_err = A_V_err[i], in_R_V = R_V, in_flux = indata[i]['SIII6312_FLUX_REFIT'], in_flux_err = indata[i]['SIII6312_FLUX_REFIT_ERR'], mc_len = 10**3) for i in range(len(indata))])
 
     corr3727 = np.array([remove(extinction.odonnell94(np.array([in_w_3727[i]]), A_V[i], R_V), indata[i]['OII3727_FLUX'])[0] for i in range(len(indata))])
-    corr3727err = np.array([remove(extinction.odonnell94(np.array([in_w_3727[i]]), A_V[i], R_V), indata[i]['OII3727_FLUX_ERR'])[0] for i in range(len(indata))])
+    corr3727err = np.array([corr_mc(in_wave = in_w_3727[i], in_A_V = A_V[i], in_A_V_err = A_V_err[i], in_R_V = R_V, in_flux = indata[i]['OII3727_FLUX'], in_flux_err = indata[i]['OII3727_FLUX_ERR'], mc_len = 10**3) for i in range(len(indata))])
     
     indata.add_columns([corr5755, corr6312, corr7319, corr7330, corr5755err, corr6312err, corr7319err, corr7330err, corr3727, corr3727err], 
                        names=('NII5754_FLUX_CORR_REFIT', 'SIII6312_FLUX_CORR_REFIT', 'OII7319_FLUX_CORR_REFIT', 'OII7330_FLUX_CORR_REFIT',
@@ -970,6 +979,7 @@ def corr(indata, in_w_7319, in_w_7330, in_w_5755, in_w_6312, in_w_3727):
                              'OII3727_FLUX_CORR', 'OII3727_FLUX_CORR_ERR'))
 
     return indata
+
 
 ### General Density and Temeperature function 
 

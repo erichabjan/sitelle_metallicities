@@ -7,8 +7,7 @@ parser.add_argument("input_string", type=str, help="The input string to process"
 args = parser.parse_args()
 galaxy = args.input_string
 
-#scripts = ["montage_reproject.py", "emission_line_fitting.py", "physical_quantities.py", "strong_calibration.py"]
-scripts = ["physical_quantities.py", "strong_calibration.py"]
+scripts = ["montage_reproject.py", "emission_line_fitting.py", "physical_quantities.py", "strong_calibration.py"]
 
 job_log_path = os.path.join('/home/habjan/SITELLE/sandbox_notebooks/job_logs', galaxy)
 os.makedirs(job_log_path, exist_ok=True)

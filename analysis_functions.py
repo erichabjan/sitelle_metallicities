@@ -1430,40 +1430,40 @@ def metal(indata, err, iters):
     N2_ion_NII_SII = N2_ion_h / O2_NII_3727_SII
     N2_ion_NII_SII_err = N2_ion_NII_SII * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_SII_err/O2_NII_3727_SII)**2)
 
-    ### N+ derviation with n([SII]) and Te([OII])
+    ### N+ derviation with n([OII]) and Te([NII])
     N2_ion_h, N2_ion_h_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        N2_ion_h[i], N2_ion_h_err[i] = ion_function(pyneb_ion=N2, in_flux=nii6584[i], in_temp=oiitemp[i], in_den=sii_ne[i], 
+        N2_ion_h[i], N2_ion_h_err[i] = ion_function(pyneb_ion=N2, in_flux=nii6584[i], in_temp=niitemp[i], in_den=oii_ne[i], 
                                         in_eval='L(6584)', in_h=hb[i], mc_iterations=iters, 
-                                        in_flux_err=nii6584_err[i], in_temp_err=oiitemp_err[i], 
-                                        in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
-    N2_ion_OII_SII = N2_ion_h / O2_NII_3727_SII
-    N2_ion_OII_SII_err = N2_ion_OII_SII * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_SII_err/O2_NII_3727_SII)**2)
+                                        in_flux_err=nii6584_err[i], in_temp_err=niitemp_err[i], 
+                                        in_den_err=oii_ne_err[i], in_h_err=hb_err[i])
+    N2_ion_NII_OII = N2_ion_h / O2_NII_3727_OII
+    N2_ion_NII_OII_err = N2_ion_NII_OII * np.sqrt((N2_ion_h_err/N2_ion_h)**2 + (O2_NII_3727_OII_err/O2_NII_3727_OII)**2)
 
-    ### Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T[SIII] + n([SII]))
+    ### Derive N elemental abundance with O+ (T([NII]) + [OII]7325+ + n([SII])) and O++ (T[SIII] + n([SII]))
     N_ICF, N_ICF_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_SII[i], O3_in = O3_SIII_SII[i], 
-                                       O2_in_err = O2_NII_3727_SII_err[i], O3_in_err = O3_SIII_SII_err[i], iterations = iters)
-    N_SIII = np.log10(N2_ion_NII_SII * N_ICF)
-    N_SIII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
+        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_7325_SII[i], O3_in = O3_SIII_SII[i], 
+                                       O2_in_err = O2_NII_7325_SII_err[i], O3_in_err = O3_SIII_SII_err[i], iterations = iters)
+    N_NII_7325_SII_SIII_SII = np.log10(N2_ion_NII_SII * N_ICF)
+    N_NII_7325_SII_SIII_SII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
 
-    ###Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T0 + n([SII]))
+    ###Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([OII])) and O++ (T0 + n([OII]))
     N_ICF, N_ICF_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_SII[i], O3_in = O3_T0_SII[i], 
-                                       O2_in_err = O2_NII_3727_SII_err[i], O3_in_err = O3_T0_SII_err[i], iterations = iters)
-    N_T0 = np.log10(N2_ion_NII_SII * N_ICF)
-    N_T0_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
+        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_3727_OII[i], O3_in = O3_T0_OII[i], 
+                                       O2_in_err = O2_NII_3727_OII_err[i], O3_in_err = O3_T0_OII_err[i], iterations = iters)
+    N_NII_3727_OII_T0_OII = np.log10(N2_ion_NII_OII * N_ICF)
+    N_NII_3727_OII_T0_OII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
 
     indata.add_columns([O2_NII_3727_OII, O2_NII_3727_OII_err, O2_NII_7325_OII, O2_NII_7325_OII_err, O2_OII_3727_OII, O2_OII_3727_OII_err, O2_NII_3727_SII, O2_NII_3727_SII_err, O2_NII_7325_SII, O2_NII_7325_SII_err,
                         O3_SIII_OII, O3_SIII_OII_err, O3_SIII_SII, O3_SIII_SII_err, O3_T0_SII, O3_T0_SII_err, O3_OIII_OII, O3_OIII_OII_err, O3_T0_OII, O3_T0_OII_err,
                         OH_T0_OII_OII_OII_3727, OH_T0_OII_OII_OII_3727_err, OH_T0_OII_NII_OII_3727, OH_T0_OII_NII_OII_3727_err, OH_SIII_SII_NII_SII_7325, OH_SIII_SII_NII_SII_7325_err, OH_T0_SII_NII_SII_3727, OH_T0_SII_NII_SII_3727_err, OH_SIII_OII_NII_OII_3727, OH_SIII_OII_NII_OII_3727_err,
-                        N2_ion_NII_SII, N2_ion_NII_SII_err, N2_ion_OII_SII, N2_ion_OII_SII_err, N_T0, N_T0_err, N_SIII, N_SIII_err],
+                        N2_ion_NII_SII, N2_ion_NII_SII_err, N2_ion_NII_OII, N2_ion_NII_OII_err, N_NII_3727_OII_T0_OII, N_NII_3727_OII_T0_OII_err, N_NII_7325_SII_SIII_SII, N_NII_7325_SII_SIII_SII_err],
                         names=('O2_NII_3727_OII', 'O2_NII_3727_OII_ERR', 'O2_NII_7325_OII', 'O2_NII_7325_OII_ERR', 'O2_OII_3727_OII', 'O2_OII_3727_OII_ERR', 'O2_NII_3727_SII', 'O2_NII_3727_SII_ERR', 'O2_NII_7325_SII', 'O2_NII_7325_SII_ERR',
                                'O3_SIII_OII', 'O3_SIII_OII_ERR', 'O3_SIII_SII', 'O3_SIII_SII_ERR', 'O3_T0_SII', 'O3_T0_SII_ERR', 'O3_OIII_OII', 'O3_OIII_OII_ERR', 'O3_T0_OII', 'O3_T0_OII_ERR',
                                'OH_T0_OII_OII_OII_3727', 'OH_T0_OII_OII_OII_3727_ERR', 'OH_T0_OII_NII_OII_3727', 'OH_T0_OII_NII_OII_3727_ERR', 'OH_SIII_SII_NII_SII_7325', 'OH_SIII_SII_NII_SII_7325_ERR', 'OH_T0_SII_NII_SII_3727', 'OH_T0_SII_NII_SII_3727_ERR', 'OH_SIII_OII_NII_OII_3727', 'OH_SIII_OII_NII_OII_3727_ERR',
-                               'N2_ABUN_NII', 'N2_ABUN_NII_ERR', 'N2_ABUN_OII', 'N2_ABUN_OII_ERR', 'N_T0', 'N_T0_ERR', 'N_SIII', 'N_SIII_ERR'))
+                               'N2_ABUN_NII_SII', 'N2_ABUN_NII_SII_ERR', 'N2_ABUN_NII_OII', 'N2_ABUN_NII_OII_ERR', 'N_NII_3727_OII_T0_OII', 'N_NII_3727_OII_T0_OII_ERR', 'N_NII_7325_SII_SIII_SII', 'N_NII_7325_SII_SIII_SII_ERR'))
 
     return indata
 

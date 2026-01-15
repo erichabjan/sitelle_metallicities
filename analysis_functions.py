@@ -1506,45 +1506,79 @@ def rcal(indata, mc):
 
     return indata
 
-### Function for the two-dimensional R and S calibration from Pilyugin & Grebel 2016
+### Function for the two-dimensional R calibration from Pilyugin & Grebel 2016
 
-def rs2Dcal(indata, mc):
-    cal_vals = np.zeros(len(indata))
+def rcal_2d(indata, mc):
+    rcal_2d_vals = np.zeros(len(indata))
 
     for i in range(len(indata)):
         N2 = (indata[i]['NII6583_FLUX_CORR'] * (4/3)) / indata[i]['HB4861_FLUX_CORR']
         R2 = indata[i]['OII3727_FLUX_CORR'] / indata[i]['HB4861_FLUX_CORR']
         R3 = (indata[i]['OIII5006_FLUX_CORR'] * (4/3)) / indata[i]['HB4861_FLUX_CORR']
-        S2 = (indata[i]['SII6716_FLUX_CORR'] + indata[i]['SII6730_FLUX_CORR']) / indata[i]['HB4861_FLUX_CORR']
-
         if np.log10(N2) >= -0.6:
-            cal_vals[i] = 8.589 + 0.329*np.log10(N2) + (-0.205 + 0.549*np.log10(N2)) * np.log10(R2)
+            rcal_2d_vals[i] = 8.589 + 0.329*np.log10(N2) + (-0.205 + 0.549*np.log10(N2)) * np.log10(R2)
         elif np.log10(N2) < -0.6:
-            cal_vals[i] = 8.445 + 0.699*np.log10(N2) + (-0.253 + 0.217*np.log10(N2)) * np.log10(S2)
+            rcal_2d_vals[i] = 7.932 + 0.944*np.log10(R3/R2) + 0.695*np.log10(N2) + (0.970 - 0.291*np.log10(R3/R2) - 0.019*np.log10(N2)) * np.log10(R2)
         else:
-            cal_vals[i] = np.nan
+            rcal_2d_vals[i] = np.nan
     
-    cal_errs = np.zeros(len(indata))
+    rcal_2d_errs = np.zeros(len(indata))
     for i in range(len(indata)):
-        if np.isnan(cal_vals[i]):
-            cal_errs[i] = np.nan
+        if np.isnan(rcal_2d_vals[i]):
+            rcal_2d_errs[i] = np.nan
             continue
         iter_arr = np.zeros(mc)
         for j in range(mc):
             N2 = (np.random.normal(indata[i]['NII6583_FLUX_CORR'], indata[i]['NII6583_FLUX_CORR_ERR']) * (4/3)) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
-            R2 = np.random.normal(indata[i]['OII3727_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR']) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
+            R2 = np.random.normal(indata[i]['OII3727_FLUX_CORR'], indata[i]['OII3727_FLUX_CORR_ERR']) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
             R3 = (np.random.normal(indata[i]['OIII5006_FLUX_CORR'], indata[i]['OIII5006_FLUX_CORR_ERR']) * (4/3)) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
-            S2 = (np.random.normal(indata[i]['SII6716_FLUX_CORR'], indata[i]['SII6716_FLUX_CORR_ERR']) + np.random.normal(indata[i]['SII6730_FLUX_CORR'], indata[i]['SII6730_FLUX_CORR_ERR'])) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
-
             if np.log10(N2) >= -0.6:
                 iter_arr[j] = 8.589 + 0.329*np.log10(N2) + (-0.205 + 0.549*np.log10(N2)) * np.log10(R2)
             elif np.log10(N2) < -0.6:
-                iter_arr[j] = 8.445 + 0.699*np.log10(N2) + (-0.253 + 0.217*np.log10(N2)) * np.log10(S2)
+                iter_arr[j] = 7.932 + 0.944*np.log10(R3/R2) + 0.695*np.log10(N2) + (0.970 - 0.291*np.log10(R3/R2) - 0.019*np.log10(N2)) * np.log10(R2)
             else:
                 iter_arr[j] = np.nan
-        cal_errs[i] = np.nanstd(iter_arr)
+        rcal_2d_errs[i] = np.nanstd(iter_arr)
     
-    indata.add_columns([cal_vals, cal_errs], names=['met_rs2Dcal', 'met_rs2Dcal_err'])
+    indata.add_columns([rcal_2d_vals, rcal_2d_errs], names=['met_r2dcal', 'met_r2dcal_err'])
+
+    return indata
+
+### Function for the two-dimensional S calibration from Pilyugin & Grebel 2016
+
+def scal_2d(indata, mc):
+    scal_2d_vals = np.zeros(len(indata))
+
+    for i in range(len(indata)):
+        N2 = (indata[i]['NII6583_FLUX_CORR'] * (4/3)) / indata[i]['HB4861_FLUX_CORR']
+        S2 = (indata[i]['SII6716_FLUX_CORR'] + indata[i]['SII6730_FLUX_CORR']) / indata[i]['HB4861_FLUX_CORR']
+        R3 = (indata[i]['OIII5006_FLUX_CORR'] * (4/3)) / indata[i]['HB4861_FLUX_CORR']
+        if np.log10(N2) >= -0.6:
+            scal_2d_vals[i] = 8.445 + 0.699*np.log10(N2) + (-0.253 + 0.217*np.log10(N2)) * np.log10(S2)
+        elif np.log10(N2) < -0.6:
+            scal_2d_vals[i] = 8.072 + 0.789*np.log10(R3/S2) + 0.726*np.log10(N2) + (1.069 - 0.170*np.log10(R3/S2) + 0.022*np.log10(N2)) * np.log10(S2)
+        else:
+            scal_2d_vals[i] = np.nan
+    
+    scal_2d_errs = np.zeros(len(indata))
+    for i in range(len(indata)):
+        if np.isnan(scal_2d_vals[i]):
+            scal_2d_errs[i] = np.nan
+            continue
+        iter_arr = np.zeros(mc)
+        for j in range(mc):
+            N2 = (np.random.normal(indata[i]['NII6583_FLUX_CORR'], indata[i]['NII6583_FLUX_CORR_ERR']) * (4/3)) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
+            S2 = (np.random.normal(indata[i]['SII6716_FLUX_CORR'], indata[i]['SII6716_FLUX_CORR_ERR']) + np.random.normal(indata[i]['SII6730_FLUX_CORR'], indata[i]['SII6730_FLUX_CORR_ERR'])) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
+            R3 = (np.random.normal(indata[i]['OIII5006_FLUX_CORR'], indata[i]['OIII5006_FLUX_CORR_ERR']) * (4/3)) / np.random.normal(indata[i]['HB4861_FLUX_CORR'], indata[i]['HB4861_FLUX_CORR_ERR'])
+            if np.log10(N2) >= -0.6:
+                iter_arr[j] = 8.445 + 0.699*np.log10(N2) + (-0.253 + 0.217*np.log10(N2)) * np.log10(S2)
+            elif np.log10(N2) < -0.6:
+                iter_arr[j] = 8.072 + 0.789*np.log10(R3/S2) + 0.726*np.log10(N2) + (1.069 - 0.170*np.log10(R3/S2) + 0.022*np.log10(N2)) * np.log10(S2)
+            else:
+                iter_arr[j] = np.nan
+        scal_2d_errs[i] = np.nanstd(iter_arr)
+    
+    indata.add_columns([scal_2d_vals, scal_2d_errs], names=['met_s2dcal', 'met_s2dcal_err'])
 
     return indata
 

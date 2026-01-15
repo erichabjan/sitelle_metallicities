@@ -68,10 +68,24 @@ if __name__ == "__main__":
     datalist = [rcal_data[i:i+batch] for i in range(0, len(data), batch)] #make list of batched data
     
     pool = mp.Pool(processes = len(datalist))          #count processes are inititiated
-    mplist = [pool.apply_async(af.rs2Dcal, args = (d, mciters)) for d in datalist] #each batched dataset is assigned to a core 
+    mplist = [pool.apply_async(af.rcal_2d, args = (d, mciters)) for d in datalist] #each batched dataset is assigned to a core 
 
 results = [mplist[i].get() for i in range(len(mplist))]      #Retrieve parallelized results
-rs_cal_data = vstack(results)
+r2dcal_data = vstack(results)
+
+### Run RScal function with multiprcoessing
+
+if __name__ == "__main__":
+
+    corenum = int(mp.cpu_count() / 2)                            #chosen based of the number of cores
+    batch = math.ceil(len(data)/corenum)     #batch determines the number of data points in each batched dataset
+    datalist = [r2dcal_data[i:i+batch] for i in range(0, len(data), batch)] #make list of batched data
+    
+    pool = mp.Pool(processes = len(datalist))          #count processes are inititiated
+    mplist = [pool.apply_async(af.scal_2d, args = (d, mciters)) for d in datalist] #each batched dataset is assigned to a core 
+
+results = [mplist[i].get() for i in range(len(mplist))]      #Retrieve parallelized results
+s2dcal_data = vstack(results)
 
 ### Run KK04 function with multiprocessing
 
@@ -79,7 +93,7 @@ if __name__ == "__main__":
 
     corenum = int(mp.cpu_count() / 2)                            #chosen based of the number of cores
     batch = math.ceil(len(data)/corenum)     #batch determines the number of data points in each batched dataset
-    datalist = [rs_cal_data[i:i+batch] for i in range(0, len(data), batch)] #make list of batched data
+    datalist = [s2dcal_data[i:i+batch] for i in range(0, len(data), batch)] #make list of batched data
     
     pool = mp.Pool(processes = len(datalist))          #count processes are inititiated
     mplist = [pool.apply_async(af.kk04, args = (d, mciters)) for d in datalist] #each batched dataset is assigned to a core 

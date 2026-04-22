@@ -1154,7 +1154,7 @@ def dentemp(indata, err, iters):
         nesii_err[i] = np.sqrt(np.nansum(np.array([nesii_nii_err[i]**2*(1/nesii_nii_err[i]**2)**2, nesii_oii_err[i]**2*(1/nesii_oii_err[i]**2)**2, nesii_siii_err[i]**2*(1/nesii_siii_err[i]**2)**2])) / np.nansum(np.array([1/nesii_nii_err[i]**2, 1/nesii_oii_err[i]**2, 1/nesii_siii_err[i]**2]))**2 )
 
 
-    ### T([OIII])
+    ### T([OIII]) B12
 
     teoiiib12 = np.zeros(len(indata))
     teoiiib12_err = np.zeros(len(indata))
@@ -1168,6 +1168,28 @@ def dentemp(indata, err, iters):
             continue
 
         teoiiib12_err[i] = np.nanstd(np.array([0.7092 * np.random.normal(tesiii[i], tesiii_err[i]) + 3609.9 for j in range(iters)]))
+
+
+    ### T([OIII]) B24
+    
+    teoiiib24 = np.zeros(len(indata))
+    teoiiib24_err = np.zeros(len(indata))
+
+    a = 0.80
+    b = 0.20
+    a_err = 0.02
+    b_err = 0.02
+
+    for i in range(len(indata)):
+        
+        if tesiii[i] > 0:
+            teoiiib24[i] = a * tesiii[i] + b
+        else: 
+            teoiiib24[i], teoiiib24_err[i] = np.nan, np.nan
+            continue
+
+        teoiiib24_err[i] = np.nanstd(np.array([np.random.normal(a, a_err) * np.random.normal(tesiii[i], tesiii_err[i]) + np.random.normal(b, b_err) for j in range(iters)]))
+
 
     ### T0
 
@@ -1198,11 +1220,11 @@ def dentemp(indata, err, iters):
             t2[i], t2err[i] = np.nan, np.nan
     
     
-    indata.add_columns([teoii, tenii, tesiii, teoiiib12, t0, neoii, nesii, t2,
-                        teoii_err, tenii_err, tesiii_err, teoiiib12_err, t0_err, neoii_err, nesii_err, t2err], 
-                        names=('OII_TEMP', 'NII_TEMP', 'SIII_TEMP','OIII_TEMP_B12', 'OIII_TEMP_MD23', 
+    indata.add_columns([teoii, tenii, tesiii, teoiiib12, teoiiib24, t0, neoii, nesii, t2,
+                        teoii_err, tenii_err, tesiii_err, teoiiib12_err, teoiiib24_err, t0_err, neoii_err, nesii_err, t2err], 
+                        names=('OII_TEMP', 'NII_TEMP', 'SIII_TEMP','OIII_TEMP_B12', 'OIII_TEMP_B24', 'OIII_TEMP_MD23', 
                                'OII_DEN', 'SII_DEN', 't^2_MD23', 
-                               'OII_TEMP_ERR', 'NII_TEMP_ERR', 'SIII_TEMP_ERR','OIII_TEMP_B12_ERR', 'OIII_TEMP_MD23_ERR', 
+                               'OII_TEMP_ERR', 'NII_TEMP_ERR', 'SIII_TEMP_ERR','OIII_TEMP_B12_ERR', 'OIII_TEMP_B24_ERR', 'OIII_TEMP_MD23_ERR', 
                                'OII_DEN_ERR', 'SII_DEN_ERR', 't^2_MD23_ERR'))
     return indata
 
@@ -1308,7 +1330,7 @@ def metal(indata, err, iters):
     siiitemp, siiitemp_err = np.array(indata['SIII_TEMP']), np.array(indata['SIII_TEMP_ERR'])
 
     t0, t0_err = np.array(indata['OIII_TEMP_MD23']), np.array(indata['OIII_TEMP_MD23_ERR'])
-    tb12, tb12_err = np.array(indata['OIII_TEMP_B12']), np.array(indata['OIII_TEMP_B12_ERR'])
+    tb24, tb24_err = np.array(indata['OIII_TEMP_B24']), np.array(indata['OIII_TEMP_B24_ERR'])
 
     ### O+ derivation with T([NII]) + [OII]3727 + n([OII])
     O2_NII_3727_OII, O2_NII_3727_OII_err = np.zeros(len(indata)), np.zeros(len(indata))
@@ -1369,9 +1391,9 @@ def metal(indata, err, iters):
     ### O++ derviation with T[OIII] + n([OII])
     O3_OIII_OII, O3_OIII_OII_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        O3_OIII_OII[i], O3_OIII_OII_err[i] = ion_function(pyneb_ion=O3, in_flux=oiii5006[i], in_temp=tb12[i], in_den=oii_ne[i], 
+        O3_OIII_OII[i], O3_OIII_OII_err[i] = ion_function(pyneb_ion=O3, in_flux=oiii5006[i], in_temp=tb24[i], in_den=oii_ne[i], 
                                                     in_eval='L(5007)', in_h=hb[i], mc_iterations=iters, 
-                                                    in_flux_err=oiii5006_err[i], in_temp_err=tb12_err[i], 
+                                                    in_flux_err=oiii5006_err[i], in_temp_err=tb24_err[i], 
                                                     in_den_err=oii_ne_err[i], in_h_err=hb_err[i])
 
     ### O++ derviation with T0(O2+) + n([OII])

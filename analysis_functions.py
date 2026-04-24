@@ -1211,11 +1211,11 @@ def dentemp(indata, err, iters):
     t2 = np.zeros(len(indata))
     t2err = np.zeros(len(indata))
     for i in range(len(indata)):
-        if ~np.isnan(teoiiib12[i]) and ~np.isnan(tenii[i]):
-            delt = teoiiib12[i] - tenii[i]
+        if ~np.isnan(teoiiib24[i]) and ~np.isnan(tenii[i]):
+            delt = teoiiib24[i] - tenii[i]
             t2[i] = 2.9 * 10**-5 * delt + 4.68 * 10**-2
             ### monte carloing of t^2
-            t2err[i] = np.nanstd(np.array([2.9 * 10**-5 * (np.random.normal(teoiiib12[i], teoiiib12_err[i]) - np.random.normal(tenii[i], tenii_err[i])) + 4.68 * 10**-2 for j in range(iters)]))
+            t2err[i] = np.nanstd(np.array([2.9 * 10**-5 * (np.random.normal(teoiiib24[i], teoiiib24_err[i]) - np.random.normal(tenii[i], tenii_err[i])) + 4.68 * 10**-2 for j in range(iters)]))
         else: 
             t2[i], t2err[i] = np.nan, np.nan
     
@@ -1380,12 +1380,12 @@ def metal(indata, err, iters):
                                                     in_flux_err=oiii5006_err[i], in_temp_err=siiitemp_err[i], 
                                                     in_den_err=oii_ne_err[i], in_h_err=hb_err[i])
 
-    ### O++ derviation with T([SIII]) + n([SII]) - MUSE only quantities
-    O3_SIII_SII, O3_SIII_SII_err = np.zeros(len(indata)), np.zeros(len(indata))
+    ### O++ derviation with T([OIII]) + n([SII]) - MUSE only quantities
+    O3_OIII_SII, O3_OIII_SII_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        O3_SIII_SII[i], O3_SIII_SII_err[i] = ion_function(pyneb_ion=O3, in_flux=oiii5006[i], in_temp=siiitemp[i], in_den=sii_ne[i], 
+        O3_OIII_SII[i], O3_OIII_SII_err[i] = ion_function(pyneb_ion=O3, in_flux=oiii5006[i], in_temp=tb24[i], in_den=sii_ne[i], 
                                                     in_eval='L(5007)', in_h=hb[i], mc_iterations=iters, 
-                                                    in_flux_err=oiii5006_err[i], in_temp_err=siiitemp_err[i], 
+                                                    in_flux_err=oiii5006_err[i], in_temp_err=tb24_err[i], 
                                                     in_den_err=sii_ne_err[i], in_h_err=hb_err[i])
 
     ### O++ derviation with T[OIII] + n([OII])
@@ -1424,11 +1424,11 @@ def metal(indata, err, iters):
         OH_T0_OII_NII_OII_3727[i], OH_T0_OII_NII_OII_3727_err[i] = O_elem_function(O2_ion=O2_NII_3727_OII[i], O3_ion=O3_T0_OII[i], 
                                                    O2_ion_err=O2_NII_3727_OII_err[i], O3_ion_err=O3_T0_OII_err[i])
     
-    ### O/H derivation with O+ (T([NII]) + [OII]7320,7330 + n([SII])) and O++ (T([SIII]) + n([SII]))
-    OH_SIII_SII_NII_SII_7325, OH_SIII_SII_NII_SII_7325_err = np.zeros(len(indata)), np.zeros(len(indata))
+    ### O/H derivation with O+ (T([NII]) + [OII]7320,7330 + n([SII])) and O++ (T([OIII]) + n([SII]))
+    OH_OIII_SII_NII_SII_7325, OH_OIII_SII_NII_SII_7325_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        OH_SIII_SII_NII_SII_7325[i], OH_SIII_SII_NII_SII_7325_err[i] = O_elem_function(O2_ion=O2_NII_7325_SII[i], O3_ion=O3_SIII_SII[i], 
-                                                   O2_ion_err=O2_NII_7325_SII_err[i], O3_ion_err=O3_SIII_SII_err[i])
+        OH_OIII_SII_NII_SII_7325[i], OH_OIII_SII_NII_SII_7325_err[i] = O_elem_function(O2_ion=O2_NII_7325_SII[i], O3_ion=O3_OIII_SII[i], 
+                                                   O2_ion_err=O2_NII_7325_SII_err[i], O3_ion_err=O3_OIII_SII_err[i])
 
     ### O/H derivation with O+ (T([NII]) + [OII]3727 + n([SII])) and O++ (T0 + n([SII]))
     OH_T0_SII_NII_SII_3727, OH_T0_SII_NII_SII_3727_err = np.zeros(len(indata)), np.zeros(len(indata))
@@ -1436,11 +1436,11 @@ def metal(indata, err, iters):
         OH_T0_SII_NII_SII_3727[i], OH_T0_SII_NII_SII_3727_err[i] = O_elem_function(O2_ion=O2_NII_3727_SII[i], O3_ion=O3_T0_SII[i], 
                                                    O2_ion_err=O2_NII_3727_SII_err[i], O3_ion_err=O3_T0_SII_err[i])
         
-    ### O/H derivation with O+ (T[NII] + [OII]3727 + n([OII])) and O++ (T[SIII] + n([OII]))
-    OH_SIII_OII_NII_OII_3727, OH_SIII_OII_NII_OII_3727_err = np.zeros(len(indata)), np.zeros(len(indata))
+    ### O/H derivation with O+ (T[NII] + [OII]3727 + n([OII])) and O++ (T[OIII] + n([OII]))
+    OH_OIII_OII_NII_OII_3727, OH_OIII_OII_NII_OII_3727_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        OH_SIII_OII_NII_OII_3727[i], OH_SIII_OII_NII_OII_3727_err[i] = O_elem_function(O2_ion=O2_NII_3727_OII[i], O3_ion=O3_SIII_OII[i], 
-                                                   O2_ion_err=O2_NII_3727_OII_err[i], O3_ion_err=O3_SIII_OII_err[i])
+        OH_OIII_OII_NII_OII_3727[i], OH_OIII_OII_NII_OII_3727_err[i] = O_elem_function(O2_ion=O2_NII_3727_OII[i], O3_ion=O3_OIII_OII[i], 
+                                                   O2_ion_err=O2_NII_3727_OII_err[i], O3_ion_err=O3_OIII_OII_err[i])
         
     ### N+ derviation with n([SII]) and Te([NII])
     N2_ion_h, N2_ion_h_err = np.zeros(len(indata)), np.zeros(len(indata))
@@ -1465,10 +1465,10 @@ def metal(indata, err, iters):
     ### Derive N elemental abundance with O+ (T([NII]) + [OII]7325+ + n([SII])) and O++ (T[SIII] + n([SII]))
     N_ICF, N_ICF_err = np.zeros(len(indata)), np.zeros(len(indata))
     for i in range(len(indata)):
-        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_7325_SII[i], O3_in = O3_SIII_SII[i], 
-                                       O2_in_err = O2_NII_7325_SII_err[i], O3_in_err = O3_SIII_SII_err[i], iterations = iters)
-    N_NII_7325_SII_SIII_SII = np.log10(N2_ion_NII_SII * N_ICF)
-    N_NII_7325_SII_SIII_SII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
+        N_ICF[i], N_ICF_err[i] = ICF_N(O2_in = O2_NII_7325_SII[i], O3_in = O3_OIII_SII[i], 
+                                       O2_in_err = O2_NII_7325_SII_err[i], O3_in_err = O3_OIII_SII_err[i], iterations = iters)
+    N_NII_7325_SII_OIII_SII = np.log10(N2_ion_NII_SII * N_ICF)
+    N_NII_7325_SII_OIII_SII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
 
     ###Derive N elemental abundance with O+ (T([NII]) + [OII]3727 + n([OII])) and O++ (T0 + n([OII]))
     N_ICF, N_ICF_err = np.zeros(len(indata)), np.zeros(len(indata))
@@ -1479,13 +1479,13 @@ def metal(indata, err, iters):
     N_NII_3727_OII_T0_OII_err = (1/np.log(10)) * np.sqrt((N_ICF_err/N_ICF)**2 + (N2_ion_NII_SII_err/N2_ion_NII_SII)**2)
 
     indata.add_columns([O2_NII_3727_OII, O2_NII_3727_OII_err, O2_NII_7325_OII, O2_NII_7325_OII_err, O2_OII_3727_SII, O2_OII_3727_SII_err, O2_NII_3727_SII, O2_NII_3727_SII_err, O2_NII_7325_SII, O2_NII_7325_SII_err,
-                        O3_SIII_OII, O3_SIII_OII_err, O3_SIII_SII, O3_SIII_SII_err, O3_T0_SII, O3_T0_SII_err, O3_OIII_OII, O3_OIII_OII_err, O3_T0_OII, O3_T0_OII_err,
-                        OH_T0_OII_OII_SII_3727, OH_T0_OII_OII_SII_3727_err, OH_T0_OII_NII_OII_3727, OH_T0_OII_NII_OII_3727_err, OH_SIII_SII_NII_SII_7325, OH_SIII_SII_NII_SII_7325_err, OH_T0_SII_NII_SII_3727, OH_T0_SII_NII_SII_3727_err, OH_SIII_OII_NII_OII_3727, OH_SIII_OII_NII_OII_3727_err,
-                        N2_ion_NII_SII, N2_ion_NII_SII_err, N2_ion_NII_OII, N2_ion_NII_OII_err, N_NII_3727_OII_T0_OII, N_NII_3727_OII_T0_OII_err, N_NII_7325_SII_SIII_SII, N_NII_7325_SII_SIII_SII_err],
+                        O3_SIII_OII, O3_SIII_OII_err, O3_OIII_SII, O3_OIII_SII_err, O3_T0_SII, O3_T0_SII_err, O3_OIII_OII, O3_OIII_OII_err, O3_T0_OII, O3_T0_OII_err,
+                        OH_T0_OII_OII_SII_3727, OH_T0_OII_OII_SII_3727_err, OH_T0_OII_NII_OII_3727, OH_T0_OII_NII_OII_3727_err, OH_OIII_SII_NII_SII_7325, OH_OIII_SII_NII_SII_7325_err, OH_T0_SII_NII_SII_3727, OH_T0_SII_NII_SII_3727_err, OH_OIII_OII_NII_OII_3727, OH_OIII_OII_NII_OII_3727_err,
+                        N2_ion_NII_SII, N2_ion_NII_SII_err, N2_ion_NII_OII, N2_ion_NII_OII_err, N_NII_3727_OII_T0_OII, N_NII_3727_OII_T0_OII_err, N_NII_7325_SII_OIII_SII, N_NII_7325_SII_OIII_SII_err],
                         names=('O2_NII_3727_OII', 'O2_NII_3727_OII_ERR', 'O2_NII_7325_OII', 'O2_NII_7325_OII_ERR', 'O2_OII_3727_SII', 'O2_OII_3727_SII_ERR', 'O2_NII_3727_SII', 'O2_NII_3727_SII_ERR', 'O2_NII_7325_SII', 'O2_NII_7325_SII_ERR',
-                               'O3_SIII_OII', 'O3_SIII_OII_ERR', 'O3_SIII_SII', 'O3_SIII_SII_ERR', 'O3_T0_SII', 'O3_T0_SII_ERR', 'O3_OIII_OII', 'O3_OIII_OII_ERR', 'O3_T0_OII', 'O3_T0_OII_ERR',
-                               'OH_T0_OII_OII_SII_3727', 'OH_T0_OII_OII_SII_3727_ERR', 'OH_T0_OII_NII_OII_3727', 'OH_T0_OII_NII_OII_3727_ERR', 'OH_SIII_SII_NII_SII_7325', 'OH_SIII_SII_NII_SII_7325_ERR', 'OH_T0_SII_NII_SII_3727', 'OH_T0_SII_NII_SII_3727_ERR', 'OH_SIII_OII_NII_OII_3727', 'OH_SIII_OII_NII_OII_3727_ERR',
-                               'N2_ABUN_NII_SII', 'N2_ABUN_NII_SII_ERR', 'N2_ABUN_NII_OII', 'N2_ABUN_NII_OII_ERR', 'N_NII_3727_OII_T0_OII', 'N_NII_3727_OII_T0_OII_ERR', 'N_NII_7325_SII_SIII_SII', 'N_NII_7325_SII_SIII_SII_ERR'))
+                               'O3_SIII_OII', 'O3_SIII_OII_ERR', 'O3_OIII_SII', 'O3_OIII_SII_ERR', 'O3_T0_SII', 'O3_T0_SII_ERR', 'O3_OIII_OII', 'O3_OIII_OII_ERR', 'O3_T0_OII', 'O3_T0_OII_ERR',
+                               'OH_T0_OII_OII_SII_3727', 'OH_T0_OII_OII_SII_3727_ERR', 'OH_T0_OII_NII_OII_3727', 'OH_T0_OII_NII_OII_3727_ERR', 'OH_OIII_SII_NII_SII_7325', 'OH_OIII_SII_NII_SII_7325_ERR', 'OH_T0_SII_NII_SII_3727', 'OH_T0_SII_NII_SII_3727_ERR', 'OH_OIII_OII_NII_OII_3727', 'OH_OIII_OII_NII_OII_3727_ERR',
+                               'N2_ABUN_NII_SII', 'N2_ABUN_NII_SII_ERR', 'N2_ABUN_NII_OII', 'N2_ABUN_NII_OII_ERR', 'N_NII_3727_OII_T0_OII', 'N_NII_3727_OII_T0_OII_ERR', 'N_NII_7325_SII_OIII_SII', 'N_NII_7325_SII_OIII_SII_ERR'))
 
     return indata
 

@@ -3,7 +3,7 @@ The code in this repository utilizes data from the PHANGS-MUSE Nebular catalog a
 <br>
 
 <p align="center">
-  <img src="figures/sitelle_deepframes.png" alt="deepframes" width="95%" />
+  <img src="figures_2/sitelle_deepframes.png" alt="deepframes" width="95%" />
 </p>
 
 <br>
@@ -13,7 +13,7 @@ This project includes additional reduction of the SITELLE data cubes, the extrac
 <br>
 
 <p align="center">
-  <img src="figures/auroral_lines.png" alt="auroral_lines" width="95%" />
+  <img src="figures_2/auroral_lines.png" alt="auroral_lines" width="95%" />
 </p>
 
 <br>
@@ -25,7 +25,7 @@ In the `emission_line_fitting.py` script, the four auroral lines mentioned above
 <br>
 
 <p align="center">
-  <img src="figures/temp_corner.png" alt="temp_corner" width="95%" />
+  <img src="figures_2/temp_corner.png" alt="temp_corner" width="95%" />
 </p>
 
 <br>

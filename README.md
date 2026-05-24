@@ -13,7 +13,7 @@ This project includes additional reduction of the SITELLE data cubes, the extrac
 <br>
 
 <p align="center">
-  <img src="figures_2/auroral_lines.png" alt="auroral_lines" width="95%" />
+  <img src="figures_2/auroral_line.png" alt="auroral_lines" width="95%" />
 </p>
 
 <br>
